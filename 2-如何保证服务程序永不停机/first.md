@@ -26,3 +26,19 @@
 
   
 
+
+
+## #include" " 和 #inlclude<> 的区别
+
+在ccs包含头文件，虽然很简单，但是一直没注意，不清除两者的区别，现在好好梳理以下：
+
+1）#include"a.h"引用的是程序目录下相对路径的头文件，而#include<a.h>引用的是编译器类库里面的头文件。
+
+比如我的project的工作区地址为C:\Users\yang\workspacev6.0\FFT，而编译器自带的头文件地址为C:\ti\controlSUITE\device_support\f2833x\v142\DSP2833x_headers\include
+
+那么，#include""会先去我的项目下去寻找这个头文件a.h，而#include<A.h>会直接到绝对路径C:\ti\controlSUITE\device_support\f2833x\v142\DSP2833x_headers\include下去引用。
+
+2）如果#include"a.h"在相对路径下没有找到这个头文件，还是会去标准函数库下去调用这个文件
+
+3）一般#include"a.h"是引用非标准头文件，通常是自己定义的，而#include<a.h>是引用标准头文件，比如stdio.h、conio.h、string.h、stdlib.h。
+
