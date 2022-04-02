@@ -4,7 +4,7 @@
 
 执行`ls -l /etc/rc.local`看看。
 
-​                               ![](D:\study\weatherCenterNote\linux操作系统\img\65.png)
+​                               ![](./img/65.png)
 
 /etc/rc.local是/etc/rc.d/rc.local文件的软链接，也就是说他们是同一个文件。
 
@@ -78,7 +78,7 @@ chmod +x /etc/rc.d/rc.local
 
 4）查看日志文件/tmp/date1.log和/tmp/date2.log的内容。
 
- ![](D:\study\weatherCenterNote\linux操作系统\img\66.png)
+ ![](./img/66.png)
 
 ## 4、应用经验
 
@@ -110,11 +110,9 @@ rc.local是一个脚本，是按顺序执行的，执行完一个程序后才会
 
 如果采用了以上脚本，Linux系统在启动完成100后，才会出现以下的登录界面。
 
- ![](D:\study\weatherCenterNote\linux操作系统\img\67.png)
+ ![](./img/67.png)
 
 ## 5、版权声明
-
-
 
 C语言技术网原创文章，转载请说明文章的来源、作者和原文的链接。
 
