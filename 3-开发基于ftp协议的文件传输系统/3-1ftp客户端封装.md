@@ -5,11 +5,11 @@
 
 在项目中需要编程的是FTP客户端，不用管服务端，服务端在各个系统中已经有成熟的ftp服务端软件
 
-首先在github上找一个开源的ftp库 https://github.com/codebrainz/ftplib，然后将其ftplib.c和ftplib.h拷贝下来，放在public目录下。然后把它编译成库。编译指令：
+首先在github上找一个开源的ftp库 <https://github.com/codebrainz/ftplib，然后将其ftplib.c和ftplib.h拷贝下来，放在public>目录下。然后把它编译成库。编译指令：
 
 ```makefile
 libftp.a:ftplib.h ftplib.c
-	gcc -c -o libftp.a ftplib.c
+ gcc -c -o libftp.a ftplib.c
 ```
 
 把它编译为.a文件。因为这个是一个纯c的库，所以为了使用方便，这里做了另外一层封装，将其封装为c++的类。
@@ -406,7 +406,7 @@ g++ -g -o ftpclinet ftpclinet.cpp /project/public/_ftp.cpp /project/public/_publ
 >
 > -I/home/include/表示将-I/home/include/目录作为第一个寻找头文件的目录，寻找的顺序是：
 >
->  /home/include/ -->/usr/include-->/usr/local/include
+> /home/include/ -->/usr/include-->/usr/local/include
 
 #### （2）-L(大写l)
 
@@ -419,3 +419,129 @@ g++ -g -o ftpclinet ftpclinet.cpp /project/public/_ftp.cpp /project/public/_publ
 > 表示：编译程序到系统默认路进搜索，如果找不到，到当前目录，如果当前目录找不到，则到LD_LIBRARY_PATH等环境变量置顶的路进去查找，如果还找不到，那么编译程序提示找不到库。
 >
 > 本例子使用的是gunzip库，库文件名是libz.so，库名是z。很容易看出，把库文件名的头lib和尾.so去掉就是库名了。
+
+### linux 编译链接库:-lz -lrt -lm -lc
+
+- -lz 压缩库（Z）
+- -lrt 实时库（real time）：shm_open系列
+- -lm 数学库（math）
+- -lc 标准C库（C lib）
+- -dl ，是显式加载动态库的动态函数库
+
+```c++
+#include "_ftp.h"
+
+Cftp ftp;
+
+int main()
+{
+    // 采用默认的被动模式登陆
+    if(ftp.login("192.168.31.166:21", "invi", "sh269jgl105") == false)
+    {
+        printf("登陆失败！\n");
+        return -1;
+    }
+    printf("登陆成功！\n");
+
+
+
+    // 获取文件时间
+    if(ftp.mtime("/ftptest/cProject8_2.cpp") == false)
+    {
+        printf("ftp.mtime(\"/ftptest/cProject8_2.cpp\") 文件时间获取失败\n");
+        return -1;
+    }
+
+    printf("ftp.mtime(\"/ftptest/cProject8_2.cpp\") 文件时间获取成功，time = %s\n", ftp.m_mtime);
+
+    // 、获取文件大小
+    if(ftp.size("/ftptest/cProject8_2.cpp") == false)
+    {
+        printf("ftp.size(\"/ftptest/cProject8_2.cpp\") 文件大小获取失败\n");
+        return -1;
+    }
+
+    printf("ftp.size(\"/ftptest/cProject8_2.cpp\") 文件大小获取成功, size = %d\n", ftp.m_size);
+
+    // 将ftp服务下的/ftptest里的子目录和文件都列举出来,并输出到 /tmp/aaa/bbb.list 中
+    // 注意 nlist 只会列举出子目录，子目录中的文件不会列举出来
+    if(ftp.nlist("/ftptest", "/tmp/aaa/bbb.list") == false)
+    {
+        printf("ftp.nlist(\"/ftptest\", \"/tmp/aaa/bbb.list\") 文件目录输出失败！\n");
+    }
+    printf("ftp.nlist(\"/ftptest\", \"/tmp/aaa/bbb.list\") 文件和目录输出成功！\n");
+
+    // 退出登陆
+    ftp.logout();
+
+    return 0;
+}
+```
+
+编译运行
+
+![](./img/QQ截图20220403134221.png)
+
+然后查看打印输出情况
+
+![](./img/QQ截图20220403134158.png)
+
+### Cftp::get()
+
+该函数用于实现ftp的文件上传功能
+
+```c++
+ // 从ftp服务器上获取文件。
+  // remotefilename：待获取ftp服务器上的文件名。
+  // localfilename：保存到本地的文件名。
+  // bCheckMTime：文件传输完成后，是否核对远程文件传输前后的时间，保证文件的完整性。
+  // 返回值：true-成功；false-失败。
+  // 注意：文件在传输的过程中，采用临时文件命名的方法，即在localfilename后加".tmp"，在传输
+  // 完成后才正式改为localfilename。
+  bool get(const char *remotefilename,const char *localfilename,const bool bCheckMTime=true);
+```
+
+代码实现
+
+```c++
+bool Cftp::get(const char *remotefilename,const char *localfilename,const bool bCheckMTime)
+{
+  if (m_ftpconn == 0) return false;
+
+  // 创建本地文件目录。
+  MKDIR(localfilename);
+
+  // 生成本地文件的临时文件名。
+  char strlocalfilenametmp[301];
+  memset(strlocalfilenametmp,0,sizeof(strlocalfilenametmp));
+  snprintf(strlocalfilenametmp,300,"%s.tmp",localfilename);
+
+  // 获取远程服务器的文件的时间。
+  if (mtime(remotefilename) == false) return false;
+
+  // 取文件。
+  if (FtpGet(strlocalfilenametmp,remotefilename,FTPLIB_IMAGE,m_ftpconn) == false) return false;
+  
+  // 判断文件获取前和获取后的时间，如果时间不同，表示在文件传输的过程中已发生了变化，返回失败。
+  if (bCheckMTime==true)
+  {
+    char strmtime[21];
+    strcpy(strmtime,m_mtime);
+
+    if (mtime(remotefilename) == false) return false;
+
+    if (strcmp(m_mtime,strmtime) != 0) return false;
+  }
+
+  // 重置文件时间。
+  UTime(strlocalfilenametmp,m_mtime);
+
+  // 改为正式的文件。
+  if (rename(strlocalfilenametmp,localfilename) != 0) return false; 
+
+  // 获取文件的大小。
+  m_size=FileSize(localfilename);
+
+  return true;
+}
+```
