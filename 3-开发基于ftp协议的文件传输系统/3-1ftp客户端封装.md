@@ -376,5 +376,46 @@ char *Cftp::response()
 
 ## Cftp类的用法演示
 
+在一个文件夹下建一个名为 `ftpclient.cpp`的测试文件，头文件包含我们封装的 `_ftp.h`。该程序的编译指令如下
 
+```shell
+g++ -g -o ftpclinet ftpclinet.cpp /project/public/_ftp.cpp /project/public/_public.cpp -I/project/public/ -L/project/public -lftp -lm -lc
+```
 
+这个演示程序的编译指令比较复杂。
+
+我们需要把 `ftpclinet.cpp /project/public/_ftp.cpp /project/public/_public.cpp`这3个程序都进行编译，public也要一起编译的原因是因为ftp.cpp里面用到了一些public里面的一些函数，然后是头文件的搜索目录 `-I/project/public/`，然后是库文件的搜索目录，`-L/project/public`也给它包含进来，注意因为我们上面说了，开源库ftplib我们把它由原始的c代码给编译成了库，所以需要把这个ftp库使用`-l`给链接进去，然后库文件的搜索目录就是使用 `-L`来指定。这就是 `-L/project/public -lftp`这段编译指令的解释。
+
+当然，你也许会说，我们可以把原始的.c文件拿来直接编译，这样也是可以的，比如直接：
+
+`g++ -g -o ftpclinet ftpclinet.cpp /project/public/_ftp.cpp /project/public/_public.cpp -I/project/public/ /project/public/ftplib.c -lm -lc`
+
+但是这样直接编译会发现出了很多错误，其实这些错误基本上都是一些兼容性问题，要解决的话，要么就修改编译参数，要么就修改源代码把它强制做一些类型转换。我们这里没这样做，所以我们是先将其编译成库，然后把库给链接进来。
+
+### linux 下 g++编译程序时，-I（大写i） 与-L（大写l）-l(小写l) 的作用
+
+> 作为一个linux入门级使用者，gcc/g++ 的简单操作已经用过多次， 但是有时稍微复杂一点的程序就会使用到库。在遇到问题的时候我查了挺多前辈总结的资料。
+>
+> **例如：libz.so**
+>
+> g++ -o compress  compress.cpp  -I/home/include/  -L/lib/  -lz
+
+#### （1） -I (大写i)
+
+> 编译程序按照-I指定的路进去搜索头文件。
+>
+> -I/home/include/表示将-I/home/include/目录作为第一个寻找头文件的目录，寻找的顺序是：
+>
+>  /home/include/ -->/usr/include-->/usr/local/include
+
+#### （2）-L(大写l)
+
+> 表示：编译程序按照－L指定的路进去寻找库文件，一般的在-L的后面可以一次用-l指定多个库文件。
+>
+> -L/lib/表示到/lib/目录下找库文件
+
+#### （3）-l(小写l)
+
+> 表示：编译程序到系统默认路进搜索，如果找不到，到当前目录，如果当前目录找不到，则到LD_LIBRARY_PATH等环境变量置顶的路进去查找，如果还找不到，那么编译程序提示找不到库。
+>
+> 本例子使用的是gunzip库，库文件名是libz.so，库名是z。很容易看出，把库文件名的头lib和尾.so去掉就是库名了。
