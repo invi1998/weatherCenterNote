@@ -488,7 +488,7 @@ int main()
 
 ### Cftp::get()
 
-该函数用于实现ftp的文件上传功能
+该函数用于实现ftp的文件下载功能
 
 ```c++
  // 从ftp服务器上获取文件。
@@ -545,3 +545,145 @@ bool Cftp::get(const char *remotefilename,const char *localfilename,const bool b
   return true;
 }
 ```
+
+该函数第一个参数，是ftp服务器上待下载的文件名。第二个参数是文件被下载后保存到本地的文件名，这两个文件名可以相同也可以不同，第三个参数是核对服务器上文件下载前和下载后的时间，如果这两个时间是相同的，表示文件在下载过程中没有变化。如果这个时间发生了改变，意味着获取到的内容是不完整的，文件在下载的过程中会采用临时文件命名的方法，下载成功后再改为正式的文件名。
+
+首先，第一步创建本地文件名目录，本地目录如果不存在，就创建它。第二步，生成本地文件名的临时文件名，就是在正式文件名后面加一个tmp后缀。第三步获取远程服务器的文件时间，然后取文件。取完文件后，如果需要核对文件下载前后的时间，那就再次获取文件的时间，把它和文件下载之前的时间做比较，如果时间不同return false。最后在重置文件名的时间，将其重置为下载前的时间。然后就可以将临时文件名改为正式文件名。获取文件大小放进m_size成员变量中。
+
+### Cftp::put()
+
+该函数用于实现ftp的文件上传功能
+
+```c++
+  // 向ftp服务器发送文件。
+  // localfilename：本地待发送的文件名。
+  // remotefilename：发送到ftp服务器上的文件名。
+  // bCheckSize：文件传输完成后，是否核对本地文件和远程文件的大小，保证文件的完整性。
+  // 返回值：true-成功；false-失败。
+  // 注意：文件在传输的过程中，采用临时文件命名的方法，即在remotefilename后加".tmp"，在传输
+  // 完成后才正式改为remotefilename。
+  bool put(const char *localfilename,const char *remotefilename,const bool bCheckSize=true);
+```
+
+具体实现
+
+```c++
+bool Cftp::put(const char *localfilename,const char *remotefilename,const bool bCheckSize)
+{
+  if (m_ftpconn == 0) return false;
+
+  // 生成服务器文件的临时文件名。
+  char strremotefilenametmp[301];
+  memset(strremotefilenametmp,0,sizeof(strremotefilenametmp));
+  snprintf(strremotefilenametmp,300,"%s.tmp",remotefilename);
+
+  // 发送文件。
+  if (FtpPut(localfilename,strremotefilenametmp,FTPLIB_IMAGE,m_ftpconn) == false) return false;
+
+  // 重命名文件。
+  if (FtpRename(strremotefilenametmp,remotefilename,m_ftpconn) == false) return false;
+
+  // 判断已上传的文件的大小与本地文件是否相同，确保上传成功。
+  if (bCheckSize==true)
+  {
+    if (size(remotefilename) == false) return false;
+
+    if (m_size != FileSize(localfilename)) return false; 
+  }
+
+  return true;
+}
+```
+
+该函数第一个参数，本地待发送的文件名，第二个参数，发送到ftp服务器上的文件名，第三个参数，文件传输完成后，是否核对本地文件和远程文件的大小，保证文件的完整性。注意，这里个get不一样，这里核对的是文件大小，不是时间。
+
+首先同样的，生成服务器的临时文件名（就是将正式文件名 + tmp），然后发送文件，发送完毕之后，将文件名改回正式文件，然后如果需要核对大小，就获取服务器上文件的大小，将其和本地文件的大小进行比较，如果不同就返回失败。
+
+这里或许会有个疑问，同样是为了保证文件的完整性，在下载的时候是核对文件的时间，在上传的时候是核对文件的大小，为什么会有这样一个区别？
+
+一个文件是否发生了变化，只能用文件时间不能用文件大小来判断。比如一个文件，里面aaa变成了bbb，文件大小没有变化，但是文件的时间发生了变化。在上传文件的过程，服务器上文件的时间是由上传文件的动作，也就是调用fti.put这个函数的时间，这个时间是没有意义的，我们可以保证在上传过程中本地的文件不发生变化，所以只需要比较最后服务器上收到的文件大小和本地文件的大小是否相同就可以了。
+
+demo测试程序代码
+
+```c++
+#include "_ftp.h"
+
+Cftp ftp;
+
+int main()
+{
+    // 采用默认的被动模式登陆
+    if(ftp.login("192.168.31.166:21", "invi", "sh269jgl105") == false)
+    {
+        printf("登陆失败！\n");
+        return -1;
+    }
+    printf("登陆成功！\n");
+
+
+
+    // 获取文件时间
+    if(ftp.mtime("/ftptest/cProject8_2.cpp") == false)
+    {
+        printf("ftp.mtime(\"/ftptest/cProject8_2.cpp\") 文件时间获取失败\n");
+        ftp.logout();
+        return -1;
+    }
+
+    printf("ftp.mtime(\"/ftptest/cProject8_2.cpp\") 文件时间获取成功，time = %s\n", ftp.m_mtime);
+
+    // 、获取文件大小
+    if(ftp.size("/ftptest/cProject8_2.cpp") == false)
+    {
+        printf("ftp.size(\"/ftptest/cProject8_2.cpp\") 文件大小获取失败\n");
+        ftp.logout();
+        return -1;
+    }
+
+    printf("ftp.size(\"/ftptest/cProject8_2.cpp\") 文件大小获取成功, size = %d\n", ftp.m_size);
+
+    // 将ftp服务下的/ftptest里的子目录和文件都列举出来,并输出到 /tmp/aaa/bbb.list 中
+    // 注意 nlist 只会列举出子目录，子目录中的文件不会列举出来
+    if(ftp.nlist("/ftptest", "/tmp/aaa/bbb.list") == false)
+    {
+        printf("ftp.nlist(\"/ftptest\", \"/tmp/aaa/bbb.list\") 文件目录输出失败！\n");
+        ftp.logout();
+        return -1;
+    }
+    printf("ftp.nlist(\"/ftptest\", \"/tmp/aaa/bbb.list\") 文件和目录输出成功！\n");
+
+    // 下载
+    if(ftp.get("/ftptest/cProject8_2.cpp", "/tmp/ftptest/cProject8_2.cpp.bak", true) == false)
+    {
+        printf("文件下载失败\n");
+        ftp.logout();
+        return -1;
+    }
+    printf("文件下载成功\n");
+
+    // 上传
+    if(ftp.put("/project/tools/c/ftpclinet.cpp", "/ftptest/ftpclient.cpp.bak", true) == false)
+    {
+        printf("文件上传失败\n");
+        ftp.logout();
+        return -1;
+    }
+
+    printf("文件上传成功！\n");
+
+    // 退出登陆
+    ftp.logout();
+
+    return 0;
+}
+```
+
+编译运行。
+
+![](./img/QQ截图20220403172956.png)
+
+---
+
+# 下载文件
+
+开发通用的文件下载模块，从ftp服务器下载文件
