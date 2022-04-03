@@ -686,4 +686,61 @@ int main()
 
 # 下载文件
 
-开发通用的文件下载模块，从ftp服务器下载文件
+开发通用的文件下载模块，从ftp服务器下载文件。ftp文件下载是一个通用的模块，放在tools目录下
+
+## 搭建程序的框架
+
+把服务器上某目录的文件全部下载到本地目录（可以指定文件名的匹配规则）
+
+把ftp服务上的某目录中的文件下载到本地目录中，代码思路
+
+> 处理程序的退出信号
+>
+> 打开日志文件
+>
+> 解析xml。得到程序运行的参数
+>
+> 进入ftp服务存放文件的目录
+>
+> 调用ftp.nlist()方法列出服务器目录中的文件，结果存放在本地文件中。
+>
+>  把ftp.nlist()方法获取到的list文件加载到容器vfilelist中
+>
+> 遍历容器vfilelist
+>
+> for(int i = 0; i < vfilelist.size(); i++)
+>
+> {
+>
+> ​    调用ftp.get()方法从服务器中下载文件
+>
+>  }
+>
+>  退出ftp服务
+
+这里，开发框架里（_public）有关于xml解析的函数。
+
+```c++
+///////////////////////////////////// /////////////////////////////////////
+// 解析xml格式字符串的函数族。
+// xml格式的字符串的内容如下：
+// <filename>/tmp/_public.h</filename><mtime>2020-01-01 12:20:35</mtime><size>18348</size>
+// <filename>/tmp/_public.cpp</filename><mtime>2020-01-01 10:10:15</mtime><size>50945</size>
+// xmlbuffer：待解析的xml格式字符串。
+// fieldname：字段的标签名。
+// value：传入变量的地址，用于存放字段内容，支持bool、int、insigned int、long、
+//       unsigned long、double和char[]。
+// 注意，当value参数的数据类型为char []时，必须保证value数组的内存足够，否则可能发生
+//       内存溢出的问题，也可以用ilen参数限定获取字段内容的长度，ilen的缺省值为0，表示不限长度。
+// 返回值：true-成功；如果fieldname参数指定的标签名不存在，返回失败。
+bool GetXMLBuffer(const char *xmlbuffer,const char *fieldname,char *value,const int ilen=0);
+bool GetXMLBuffer(const char *xmlbuffer,const char *fieldname,bool *value);
+bool GetXMLBuffer(const char *xmlbuffer,const char *fieldname,int  *value);
+bool GetXMLBuffer(const char *xmlbuffer,const char *fieldname,unsigned int *value);
+bool GetXMLBuffer(const char *xmlbuffer,const char *fieldname,long *value);
+bool GetXMLBuffer(const char *xmlbuffer,const char *fieldname,unsigned long *value);
+bool GetXMLBuffer(const char *xmlbuffer,const char *fieldname,double *value);
+///////////////////////////////////// /////////////////////////////////////
+```
+
+采用xml作为程序的运行参数，易扩展，不容易出错。

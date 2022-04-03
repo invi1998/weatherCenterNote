@@ -289,3 +289,37 @@ source /etc/profile
 # 六、应用经验
 
 虽然设置环境变量的方法有多种，但是建议系统环境变量建议在/etc/profile.d目录中配置，用户环境变量在用户的.bash_profile中配置，不建议在其它脚本文件中配置环境变，会增加运维的麻烦，容易出错。.
+
+# Ubuntu 设置 LD_LIBRARY_PATH
+
+具体修改方法为
+
+首先寻找库的路径，可以在文件中搜索libboost_python39.so，找到路径后，执行
+
+```shell
+$ sudo gedit ~/.bashrc
+在文件中加上这一行：
+export LD_LIBRARY_PATH=/上文找到的库路径/lib/:$LD_LIBRARY_PATH
+
+或者执行：
+$ echo 'export LD_LIBRARY_PATH=/上文找到的库路径/lib/:$LD_LIBRARY_PATH' >> ~/.bashrc
+$ source ~/.bashrc
+```
+
+来修改环境变量 LD_LIBRARY_PATH，加入库文件所在路径。
+
+若修改变量 LD_LIBRARY_PATH 不奏效，则修改变量 LIBRARY_PATH 。(重点！！！而且我亲测只修改LD_LIBRARY_PATH 不得行~所以还要修改LIBRARY_PATH)
+
+```shell
+$ sudo gedit ~/.bashrc
+在文件中加上这一行：
+export LIBRARY_PATH=/上文找到的库路径/lib/:$LIBRARY_PATH
+```
+
+或者执行：
+
+```shell
+$ echo 'export LIBRARY_PATH=/上文找到的库路径/lib/:$LIBRARY_PATH' >> ~/.bashrc
+$ source ~/.bashrc
+```
+
