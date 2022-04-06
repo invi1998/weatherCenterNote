@@ -430,4 +430,597 @@ int main(int argc,char *argv[])
 
 ![](./img/QQ截图20220406130415.png)
 
+
+
+#### TcpWrite
+
+```c++
+// 向socket的对端发送数据。
+// sockfd：可用的socket连接。
+// buffer：待发送数据缓冲区的地址。
+// ibuflen：待发送数据的字节数，如果发送的是ascii字符串，ibuflen填0或字符串的长度，
+//          如果是二进制流数据，ibuflen为二进制数据块的大小。
+// 返回值：true-成功；false-失败，如果失败，表示socket连接已不可用。
+bool TcpWrite(const int sockfd,const char *buffer,const int ibuflen)
+{
+  if (sockfd==-1) return false;
+
+  int ilen=0;  // 报文长度。
+
+  // 如果ibuflen==0，就认为需要发送的是字符串，报文长度为字符串的长度。
+  if (ibuflen==0) ilen=strlen(buffer);
+  else ilen=ibuflen;
+
+  int ilenn=htonl(ilen);    // 把报文长度转换为网络字节序。
+
+  char TBuffer[ilen+4];     // 发送缓冲区。
+  memset(TBuffer,0,sizeof(TBuffer));  // 清区发送缓冲区。
+  memcpy(TBuffer,&ilenn,4);           // 把报文长度拷贝到缓冲区。
+  memcpy(TBuffer+4,buffer,ilen);      // 把报文内容拷贝到缓冲区。
+  
+  // 发送缓冲区中的数据。
+  if (Writen(sockfd,TBuffer,ilen+4) == false) return false;
+
+  return true;
+}
+```
+
+首先先看TcpWrite函数，在这个函数里，首先先获取报文长度，然后将这个报文长度转换为网络字节序，然后将包文长度拷贝进发送缓冲区中（一个字符串变量中），然后再偏移4个字节，将包文内容拷贝进缓冲区中。这里为什么要偏移4字节，因为报文长度信息是一个整形变量，他的字节数为4，所以报文内容就得偏移这4个字节拷贝进发送缓冲区，不然就会把包头（报文长度信息）给覆盖了。
+
+然后后续调用我们封装的Writen函数进行数据发送，这里为什么不直接用socket通讯里的send函数？其实Writen就是对send函数的封装，send函数我们知道，socket他有两个缓冲区，发送缓冲区和接收缓冲区。调用send函数的时候，如果你想发送1000个字节，它可能只发送了500字节，因为这个时候socket的发送缓冲区快满了，只有500字节的空间可以用，那么这次send就只能写入前500字节的报文，剩余的内容就只能等到发送缓冲区空闲的时候才能写入。这里可以看一下Writen函数的实现，其实就是循环调用send函数，判断是否还有未发送的字节数。如果发送的过程中tcp连接断开了或者其他错误，返回false。
+
+```c++
+// 向已经准备好的socket中写入数据。
+// sockfd：已经准备好的socket连接。
+// buffer：待发送数据缓冲区的地址。
+// n：待发送数据的字节数。
+// 返回值：成功发送完n字节的数据后返回true，socket连接不可用返回false。
+bool Writen(const int sockfd,const char *buffer,const size_t n)
+{
+  int nLeft=n;  // 剩余需要写入的字节数。
+  int idx=0;    // 已成功写入的字节数。
+  int nwritten; // 每次调用send()函数写入的字节数。
+  
+  while(nLeft > 0 )
+  {    
+    if ( (nwritten=send(sockfd,buffer+idx,nLeft,0)) <= 0) return false;      
+    
+    nLeft=nLeft-nwritten;
+    idx=idx+nwritten;
+  }
+
+  return true;
+}
+
+```
+
+#### TcpRead
+
+```c++
+// 接收socket的对端发送过来的数据。
+// sockfd：可用的socket连接。
+// buffer：接收数据缓冲区的地址。
+// ibuflen：本次成功接收数据的字节数。
+// itimeout：接收等待超时的时间，单位：秒，-1-不等待；0-无限等待；>0-等待的秒数。
+// 返回值：true-成功；false-失败，失败有两种情况：1）等待超时；2）socket连接已不可用。
+bool TcpRead(const int sockfd,char *buffer,int *ibuflen,const int itimeout)
+{
+  if (sockfd==-1) return false;
+
+  // 如果itimeout>0，表示需要等待itimeout秒，如果itimeout秒后还没有数据到达，返回false。
+  if (itimeout>0)
+  {
+    struct pollfd fds;
+    fds.fd=sockfd;
+    fds.events=POLLIN;
+    if ( poll(&fds,1,itimeout*1000) <= 0 ) return false;
+  }
+
+  // 如果itimeout==-1，表示不等待，立即判断socket的缓冲区中是否有数据，如果没有，返回false。
+  if (itimeout==-1)
+  {
+    struct pollfd fds;
+    fds.fd=sockfd;
+    fds.events=POLLIN;
+    if ( poll(&fds,1,0) <= 0 ) return false;
+  }
+
+  (*ibuflen) = 0;  // 报文长度变量初始化为0。
+
+  // 先读取报文长度，4个字节。
+  if (Readn(sockfd,(char*)ibuflen,4) == false) return false;
+
+  (*ibuflen)=ntohl(*ibuflen);  // 把报文长度由网络字节序转换为主机字节序。
+
+  // 再读取报文内容。
+  if (Readn(sockfd,buffer,(*ibuflen)) == false) return false;
+
+  return true;
+}
+```
+
+这个函数稍微麻烦点，他的第四个参数是超时时间。ibuflen：本次成功接收数据的字节数，这是一个整形变量的地址。调用这个函数的时候，对于传进来的 ibuflen 用于存放接收包文的长度，先初始化为0。我们知道，我们现在定义的这个报文，它是由 `报文长度 + 报文内容组成`，报文长度是整数，固定4个字节，我们就可以先读取这4个字节，然后再把这个报文长度由网络字节序转为主机字节序，拿到报文长度信息。最后再继续调用Readn函数，以报文长度作为参数，把报文内容读取出来，放到buffer里面。
+
+在TcpRead函数中，读取报文调用的是我们封装的Readn函数，不是原生的recv函数，封装这个函数就是为了解决粘包和分包问题。注意看第三个参数n，本次接收数据的字节数，我们每次调用Readn函数，都只会从接收缓冲区中取走这n个字节的数据，不会多也不会少，在函数里面，循环调用recv读取数据，如果成功读取到了n个字节的数据，函数返回true。如果读取过程职工发生了意外，比如连接断开等，就返回false。注意这里有个细节，我们每次调用recv读取数据的时候，要更新buffer的偏移位置，比如第一次调用读取了100字节，那么下次调用recv的时候，就需要将数据存放变量地址往后偏移100字节，这样才能保证读完n个字节的数据后，buffer里保存的是完整的数据。
+
+```c++
+// 从已经准备好的socket中读取数据。
+// sockfd：已经准备好的socket连接。
+// buffer：接收数据缓冲区的地址。
+// n：本次接收数据的字节数。
+// 返回值：成功接收到n字节的数据后返回true，socket连接不可用返回false。
+bool Readn(const int sockfd,char *buffer,const size_t n)
+{
+  int nLeft=n;  // 剩余需要读取的字节数。
+  int idx=0;    // 已成功读取的字节数。
+  int nread;    // 每次调用recv()函数读到的字节数。
+
+  while(nLeft > 0)
+  {
+    if ( (nread=recv(sockfd,buffer+idx,nLeft,0)) <= 0) return false;
+
+    idx=idx+nread;
+    nLeft=nLeft-nread;
+  }
+
+  return true;
+}
+```
+
+
+
 ## 封装socket的常用函数
+
+以下是socket通讯的函数和类的声明代码
+
+```c++
+///////////////////////////////////////////////////////////////////////////////////////////////////
+// 以下是socket通讯的函数和类
+
+// socket通讯的客户端类
+class CTcpClient
+{
+public:
+  int  m_connfd;    // 客户端的socket.
+  char m_ip[21];    // 服务端的ip地址。
+  int  m_port;      // 与服务端通讯的端口。
+  bool m_btimeout;  // 调用Read方法时，失败的原因是否是超时：true-超时，false-未超时。
+  int  m_buflen;    // 调用Read方法后，接收到的报文的大小，单位：字节。
+
+  CTcpClient();  // 构造函数。
+
+  // 向服务端发起连接请求。
+  // ip：服务端的ip地址。
+  // port：服务端监听的端口。
+  // 返回值：true-成功；false-失败。
+  bool ConnectToServer(const char *ip,const int port);
+
+  // 接收服务端发送过来的数据。
+  // buffer：接收数据缓冲区的地址，数据的长度存放在m_buflen成员变量中。
+  // itimeout：等待数据的超时时间，单位：秒，缺省值是0-无限等待。
+  // 返回值：true-成功；false-失败，失败有两种情况：1）等待超时，成员变量m_btimeout的值被设置为true；2）socket连接已不可用。
+  bool Read(char *buffer,const int itimeout=0);
+
+  // 向服务端发送数据。
+  // buffer：待发送数据缓冲区的地址。
+  // ibuflen：待发送数据的大小，单位：字节，缺省值为0，如果发送的是ascii字符串，ibuflen取0，如果是二进制流数据，ibuflen为二进制数据块的大小。
+  // 返回值：true-成功；false-失败，如果失败，表示socket连接已不可用。
+  bool Write(const char *buffer,const int ibuflen=0);
+
+  // 断开与服务端的连接
+  void Close();
+
+  ~CTcpClient();  // 析构函数自动关闭socket，释放资源。
+};
+
+// socket通讯的服务端类
+class CTcpServer
+{
+private:
+  int m_socklen;                    // 结构体struct sockaddr_in的大小。
+  struct sockaddr_in m_clientaddr;  // 客户端的地址信息。
+  struct sockaddr_in m_servaddr;    // 服务端的地址信息。
+public:
+  int  m_listenfd;   // 服务端用于监听的socket。
+  int  m_connfd;     // 客户端连接上来的socket。
+  bool m_btimeout;   // 调用Read方法时，失败的原因是否是超时：true-超时，false-未超时。
+  int  m_buflen;     // 调用Read方法后，接收到的报文的大小，单位：字节。
+
+  CTcpServer();  // 构造函数。
+
+  // 服务端初始化。
+  // port：指定服务端用于监听的端口。
+  // 返回值：true-成功；false-失败，一般情况下，只要port设置正确，没有被占用，初始化都会成功。
+  bool InitServer(const unsigned int port,const int backlog=5); 
+
+  // 阻塞等待客户端的连接请求。
+  // 返回值：true-有新的客户端已连接上来，false-失败，Accept被中断，如果Accept失败，可以重新Accept。
+  bool Accept();
+
+  // 获取客户端的ip地址。
+  // 返回值：客户端的ip地址，如"192.168.1.100"。
+  char *GetIP();
+
+  // 接收客户端发送过来的数据。
+  // buffer：接收数据缓冲区的地址，数据的长度存放在m_buflen成员变量中。
+  // itimeout：等待数据的超时时间，单位：秒，缺省值是0-无限等待。
+  // 返回值：true-成功；false-失败，失败有两种情况：1）等待超时，成员变量m_btimeout的值被设置为true；2）socket连接已不可用。
+  bool Read(char *buffer,const int itimeout=0);
+
+  // 向客户端发送数据。
+  // buffer：待发送数据缓冲区的地址。
+  // ibuflen：待发送数据的大小，单位：字节，缺省值为0，如果发送的是ascii字符串，ibuflen取0，如果是二进制流数据，ibuflen为二进制数据块的大小。
+  // 返回值：true-成功；false-失败，如果失败，表示socket连接已不可用。
+  bool Write(const char *buffer,const int ibuflen=0);
+
+  // 关闭监听的socket，即m_listenfd，常用于多进程服务程序的子进程代码中。
+  void CloseListen();
+
+  // 关闭客户端的socket，即m_connfd，常用于多进程服务程序的父进程代码中。
+  void CloseClient();
+
+  ~CTcpServer();  // 析构函数自动关闭socket，释放资源。
+};
+
+// 接收socket的对端发送过来的数据。
+// sockfd：可用的socket连接。
+// buffer：接收数据缓冲区的地址。
+// ibuflen：本次成功接收数据的字节数。
+// itimeout：接收等待超时的时间，单位：秒，-1-不等待；0-无限等待；>0-等待的秒数。
+// 返回值：true-成功；false-失败，失败有两种情况：1）等待超时；2）socket连接已不可用。
+bool TcpRead(const int sockfd,char *buffer,int *ibuflen,const int itimeout=0);
+
+// 向socket的对端发送数据。
+// sockfd：可用的socket连接。
+// buffer：待发送数据缓冲区的地址。
+// ibuflen：待发送数据的字节数，如果发送的是ascii字符串，ibuflen填0或字符串的长度，
+//          如果是二进制流数据，ibuflen为二进制数据块的大小。
+// 返回值：true-成功；false-失败，如果失败，表示socket连接已不可用。
+bool TcpWrite(const int sockfd,const char *buffer,const int ibuflen=0);
+
+// 从已经准备好的socket中读取数据。
+// sockfd：已经准备好的socket连接。
+// buffer：接收数据缓冲区的地址。
+// n：本次接收数据的字节数。
+// 返回值：成功接收到n字节的数据后返回true，socket连接不可用返回false。
+bool Readn(const int sockfd,char *buffer,const size_t n);
+
+// 向已经准备好的socket中写入数据。
+// sockfd：已经准备好的socket连接。
+// buffer：待发送数据缓冲区的地址。
+// n：待发送数据的字节数。
+// 返回值：成功发送完n字节的数据后返回true，socket连接不可用返回false。
+bool Writen(const int sockfd,const char *buffer,const size_t n);
+
+// 以上是socket通讯的函数和类
+///////////////////////////////////// /////////////////////////////////////
+```
+
+以下是socket通讯的函数和类的具体实现
+
+```c++
+CTcpClient::CTcpClient()
+{
+  m_connfd=-1;
+  memset(m_ip,0,sizeof(m_ip));
+  m_port=0;
+  m_btimeout=false;
+}
+
+bool CTcpClient::ConnectToServer(const char *ip,const int port)
+{
+  // 如果已连接到服务端，则断开，这种处理方法没有特别的原因，不要纠结。
+  if (m_connfd!=-1) { close(m_connfd); m_connfd=-1; }
+ 
+  // 忽略SIGPIPE信号，防止程序异常退出。
+  // 如果send到一个disconnected socket上，内核就会发出SIGPIPE信号。这个信号
+  // 的缺省处理方法是终止进程，大多数时候这都不是我们期望的。我们重新定义这
+  // 个信号的处理方法，大多数情况是直接屏蔽它。
+  signal(SIGPIPE,SIG_IGN);   
+
+  STRCPY(m_ip,sizeof(m_ip),ip);
+  m_port=port;
+
+  struct hostent* h;
+  struct sockaddr_in servaddr;
+
+  if ( (m_connfd = socket(AF_INET,SOCK_STREAM,0) ) < 0) return false;
+
+  if ( !(h = gethostbyname(m_ip)) )
+  {
+    close(m_connfd);  m_connfd=-1; return false;
+  }
+
+  memset(&servaddr,0,sizeof(servaddr));
+  servaddr.sin_family = AF_INET;
+  servaddr.sin_port = htons(m_port);  // 指定服务端的通讯端口
+  memcpy(&servaddr.sin_addr,h->h_addr,h->h_length);
+
+  if (connect(m_connfd, (struct sockaddr *)&servaddr,sizeof(servaddr)) != 0)
+  {
+    close(m_connfd);  m_connfd=-1; return false;
+  }
+
+  return true;
+}
+
+// 接收服务端发送过来的数据。
+// buffer：接收数据缓冲区的地址，数据的长度存放在m_buflen成员变量中。
+// itimeout：等待数据的超时时间，单位：秒，缺省值是0-无限等待。
+// 返回值：true-成功；false-失败，失败有两种情况：1）等待超时，成员变量m_btimeout的值被设置为true；2）socket连接已不可用。
+bool CTcpClient::Read(char *buffer,const int itimeout)
+{
+  if (m_connfd==-1) return false;
+
+  // 如果itimeout>0，表示需要等待itimeout秒，如果itimeout秒后还没有数据到达，返回false。
+  if (itimeout>0)
+  {
+    struct pollfd fds;
+    fds.fd=m_connfd;
+    fds.events=POLLIN;  
+    int iret;
+    m_btimeout=false;
+    if ( (iret=poll(&fds,1,itimeout*1000)) <= 0 )
+    {
+      if (iret==0) m_btimeout = true;
+      return false;
+    }
+  }
+
+  m_buflen = 0;
+  return (TcpRead(m_connfd,buffer,&m_buflen));
+}
+
+bool CTcpClient::Write(const char *buffer,const int ibuflen)
+{
+  if (m_connfd==-1) return false;
+
+  int ilen=ibuflen;
+
+  if (ibuflen==0) ilen=strlen(buffer);
+
+  return(TcpWrite(m_connfd,buffer,ilen));
+}
+
+void CTcpClient::Close()
+{
+  if (m_connfd > 0) close(m_connfd); 
+
+  m_connfd=-1;
+  memset(m_ip,0,sizeof(m_ip));
+  m_port=0;
+  m_btimeout=false;
+}
+
+CTcpClient::~CTcpClient()
+{
+  Close();
+}
+
+CTcpServer::CTcpServer()
+{
+  m_listenfd=-1;
+  m_connfd=-1;
+  m_socklen=0;
+  m_btimeout=false;
+}
+
+bool CTcpServer::InitServer(const unsigned int port,const int backlog)
+{
+  // 如果服务端的socket>0，关掉它，这种处理方法没有特别的原因，不要纠结。
+  if (m_listenfd > 0) { close(m_listenfd); m_listenfd=-1; }
+
+  if ( (m_listenfd = socket(AF_INET,SOCK_STREAM,0))<=0) return false;
+
+  // 忽略SIGPIPE信号，防止程序异常退出。
+  signal(SIGPIPE,SIG_IGN);   
+
+  // 打开SO_REUSEADDR选项，当服务端连接处于TIME_WAIT状态时可以再次启动服务器，
+  // 否则bind()可能会不成功，报：Address already in use。
+  //char opt = 1; unsigned int len = sizeof(opt);
+  int opt = 1; unsigned int len = sizeof(opt);
+  setsockopt(m_listenfd,SOL_SOCKET,SO_REUSEADDR,&opt,len);    
+
+  memset(&m_servaddr,0,sizeof(m_servaddr));
+  m_servaddr.sin_family = AF_INET;
+  m_servaddr.sin_addr.s_addr = htonl(INADDR_ANY);   // 任意ip地址。
+  m_servaddr.sin_port = htons(port);
+  if (bind(m_listenfd,(struct sockaddr *)&m_servaddr,sizeof(m_servaddr)) != 0 )
+  {
+    CloseListen(); return false;
+  }
+
+  if (listen(m_listenfd,backlog) != 0 )
+  {
+    CloseListen(); return false;
+  }
+
+  return true;
+}
+
+bool CTcpServer::Accept()
+{
+  if (m_listenfd==-1) return false;
+
+  m_socklen = sizeof(struct sockaddr_in);
+
+  if ((m_connfd=accept(m_listenfd,(struct sockaddr *)&m_clientaddr,(socklen_t*)&m_socklen)) < 0)
+      return false;
+
+  return true;
+}
+
+char *CTcpServer::GetIP()
+{
+  return(inet_ntoa(m_clientaddr.sin_addr));
+}
+
+bool CTcpServer::Read(char *buffer,const int itimeout)
+{
+  if (m_connfd==-1) return false;
+
+  // 如果itimeout>0，表示需要等待itimeout秒，如果itimeout秒后还没有数据到达，返回false。
+  if (itimeout>0)
+  {
+    struct pollfd fds;
+    fds.fd=m_connfd;
+    fds.events=POLLIN;
+    m_btimeout=false;
+    int iret;
+    if ( (iret=poll(&fds,1,itimeout*1000)) <= 0 )
+    {
+      if (iret==0) m_btimeout = true;
+      return false;
+    }
+  }
+
+  m_buflen = 0;
+  return(TcpRead(m_connfd,buffer,&m_buflen));
+}
+
+bool CTcpServer::Write(const char *buffer,const int ibuflen)
+{
+  if (m_connfd==-1) return false;
+
+  int ilen = ibuflen;
+  if (ilen==0) ilen=strlen(buffer);
+
+  return(TcpWrite(m_connfd,buffer,ilen));
+}
+
+void CTcpServer::CloseListen()
+{
+  if (m_listenfd > 0)
+  {
+    close(m_listenfd); m_listenfd=-1;
+  }
+}
+
+void CTcpServer::CloseClient()
+{
+  if (m_connfd > 0)
+  {
+    close(m_connfd); m_connfd=-1; 
+  }
+}
+
+CTcpServer::~CTcpServer()
+{
+  CloseListen(); CloseClient();
+}
+
+// 接收socket的对端发送过来的数据。
+// sockfd：可用的socket连接。
+// buffer：接收数据缓冲区的地址。
+// ibuflen：本次成功接收数据的字节数。
+// itimeout：接收等待超时的时间，单位：秒，-1-不等待；0-无限等待；>0-等待的秒数。
+// 返回值：true-成功；false-失败，失败有两种情况：1）等待超时；2）socket连接已不可用。
+bool TcpRead(const int sockfd,char *buffer,int *ibuflen,const int itimeout)
+{
+  if (sockfd==-1) return false;
+
+  // 如果itimeout>0，表示需要等待itimeout秒，如果itimeout秒后还没有数据到达，返回false。
+  if (itimeout>0)
+  {
+    struct pollfd fds;
+    fds.fd=sockfd;
+    fds.events=POLLIN;
+    if ( poll(&fds,1,itimeout*1000) <= 0 ) return false;
+  }
+
+  // 如果itimeout==-1，表示不等待，立即判断socket的缓冲区中是否有数据，如果没有，返回false。
+  if (itimeout==-1)
+  {
+    struct pollfd fds;
+    fds.fd=sockfd;
+    fds.events=POLLIN;
+    if ( poll(&fds,1,0) <= 0 ) return false;
+  }
+
+  (*ibuflen) = 0;  // 报文长度变量初始化为0。
+
+  // 先读取报文长度，4个字节。
+  if (Readn(sockfd,(char*)ibuflen,4) == false) return false;
+
+  (*ibuflen)=ntohl(*ibuflen);  // 把报文长度由网络字节序转换为主机字节序。
+
+  // 再读取报文内容。
+  if (Readn(sockfd,buffer,(*ibuflen)) == false) return false;
+
+  return true;
+}
+
+// 向socket的对端发送数据。
+// sockfd：可用的socket连接。
+// buffer：待发送数据缓冲区的地址。
+// ibuflen：待发送数据的字节数，如果发送的是ascii字符串，ibuflen填0或字符串的长度，
+//          如果是二进制流数据，ibuflen为二进制数据块的大小。
+// 返回值：true-成功；false-失败，如果失败，表示socket连接已不可用。
+bool TcpWrite(const int sockfd,const char *buffer,const int ibuflen)
+{
+  if (sockfd==-1) return false;
+
+  int ilen=0;  // 报文长度。
+
+  // 如果ibuflen==0，就认为需要发送的是字符串，报文长度为字符串的长度。
+  if (ibuflen==0) ilen=strlen(buffer);
+  else ilen=ibuflen;
+
+  int ilenn=htonl(ilen);    // 把报文长度转换为网络字节序。
+
+  char TBuffer[ilen+4];     // 发送缓冲区。
+  memset(TBuffer,0,sizeof(TBuffer));  // 清区发送缓冲区。
+  memcpy(TBuffer,&ilenn,4);           // 把报文长度拷贝到缓冲区。
+  memcpy(TBuffer+4,buffer,ilen);      // 把报文内容拷贝到缓冲区。
+  
+  // 发送缓冲区中的数据。
+  if (Writen(sockfd,TBuffer,ilen+4) == false) return false;
+
+  return true;
+}
+
+// 从已经准备好的socket中读取数据。
+// sockfd：已经准备好的socket连接。
+// buffer：接收数据缓冲区的地址。
+// n：本次接收数据的字节数。
+// 返回值：成功接收到n字节的数据后返回true，socket连接不可用返回false。
+bool Readn(const int sockfd,char *buffer,const size_t n)
+{
+  int nLeft=n;  // 剩余需要读取的字节数。
+  int idx=0;    // 已成功读取的字节数。
+  int nread;    // 每次调用recv()函数读到的字节数。
+
+  while(nLeft > 0)
+  {
+    if ( (nread=recv(sockfd,buffer+idx,nLeft,0)) <= 0) return false;
+
+    idx=idx+nread;
+    nLeft=nLeft-nread;
+  }
+
+  return true;
+}
+
+// 向已经准备好的socket中写入数据。
+// sockfd：已经准备好的socket连接。
+// buffer：待发送数据缓冲区的地址。
+// n：待发送数据的字节数。
+// 返回值：成功发送完n字节的数据后返回true，socket连接不可用返回false。
+bool Writen(const int sockfd,const char *buffer,const size_t n)
+{
+  int nLeft=n;  // 剩余需要写入的字节数。
+  int idx=0;    // 已成功写入的字节数。
+  int nwritten; // 每次调用send()函数写入的字节数。
+  
+  while(nLeft > 0 )
+  {    
+    if ( (nwritten=send(sockfd,buffer+idx,nLeft,0)) <= 0) return false;      
+    
+    nLeft=nLeft-nwritten;
+    idx=idx+nwritten;
+  }
+
+  return true;
+}
+```
+
