@@ -430,8 +430,6 @@ int main(int argc,char *argv[])
 
 ![](./img/QQ截图20220406130415.png)
 
-
-
 #### TcpWrite
 
 ```c++
@@ -567,9 +565,105 @@ bool Readn(const int sockfd,char *buffer,const size_t n)
 }
 ```
 
-
-
 ## 封装socket的常用函数
+
+这里先演示几个使用封装的socket通讯类写的程序。
+
+服务端
+
+```c++
+/*
+ * 程序名：demo08.cpp，此程序用于演示采用TcpServer类实现socket通讯的服务端。
+ * author：invi
+*/
+#include "../_public.h"
+ 
+int main(int argc,char *argv[])
+{
+  if (argc!=2)
+  {
+    printf("Using:./demo08 port\nExample:./demo08 5005\n\n"); return -1;
+  }
+
+  CTcpServer TcpServer;
+
+  // 服务端初始化。
+  if (TcpServer.InitServer(atoi(argv[1]))==false)
+  {
+    printf("TcpServer.InitServer(%s) failed.\n",argv[1]); return -1;
+  }
+
+  // 等待客户端的连接请求。
+  if (TcpServer.Accept()==false)
+  {
+    printf("TcpServer.Accept() failed.\n"); return -1;
+  }
+
+  printf("客户端（%s）已连接。\n",TcpServer.GetIP());
+
+  char buffer[102400];
+
+  // 与客户端通讯，接收客户端发过来的报文后，回复ok。
+  while (1)
+  {
+    memset(buffer,0,sizeof(buffer));
+    if (TcpServer.Read(buffer)==false) break; // 接收客户端的请求报文。
+    printf("接收：%s\n",buffer);
+
+    strcpy(buffer,"ok");
+    if (TcpServer.Write(buffer)==false) break; // 向客户端发送响应结果。
+    printf("发送：%s\n",buffer);
+  }
+}
+
+```
+
+客户端
+
+```c++
+/*
+ * 程序名：demo07.cpp，此程序用于演示采用TcpClient类实现socket通讯的客户端。
+ * author：invi
+*/
+#include "../_public.h"
+ 
+int main(int argc,char *argv[])
+{
+  if (argc!=3)
+  {
+    printf("Using:./demo07 ip port\nExample:./demo07 127.0.0.1 5005\n\n"); return -1;
+  }
+
+  CTcpClient TcpClient;
+
+  // 向服务端发起连接请求。
+  if (TcpClient.ConnectToServer(argv[1],atoi(argv[2]))==false)
+  {
+    printf("TcpClient.ConnectToServer(%s,%s) failed.\n",argv[1],argv[2]); return -1;
+  }
+
+  char buffer[102400];
+ 
+  // 与服务端通讯，发送一个报文后等待回复，然后再发下一个报文。
+  for (int ii=0;ii<100000;ii++)
+  {
+    SPRINTF(buffer,sizeof(buffer),"这是第%d个超级女生，编号%03d。",ii+1,ii+1);
+    if (TcpClient.Write(buffer)==false) break; // 向服务端发送请求报文。
+    printf("发送：%s\n",buffer);
+
+    memset(buffer,0,sizeof(buffer));
+    if (TcpClient.Read(buffer)==false) break; // 接收服务端的回应报文。
+    printf("接收：%s\n",buffer);
+
+    sleep(1);  // 每隔一秒后再次发送报文。
+  }
+}
+
+```
+
+编译后运行，可以看到使用我们封装的通讯类，可以正常进行tcp通讯
+
+![](./img/QQ截图20220406145241.png)
 
 以下是socket通讯的函数和类的声明代码
 
@@ -1024,3 +1118,81 @@ bool Writen(const int sockfd,const char *buffer,const size_t n)
 }
 ```
 
+在CTcpServer::InitServer这个初始化socket函数中，我们发现它有一行忽略 `SIGPIPE`信号的代码，这里解释一下这个代码的用意。在网络通讯的程序中，往往需要忽略 SIGPIPE 信号。忽略SIGPIPE信号，防止程序异常退出。如果send到一个disconnected socket上（也就是向一个已经关闭的socket发送数据），内核就会发出SIGPIPE信号。这个信号的缺省处理方法是终止进程，大多数时候这都不是我们期望的。我们重新定义这个信号的处理方法，大多数情况是直接屏蔽它。也就是说，我们应该根据socket通讯的错误返回值来决定程序的执行流程，而不是任由这个信号来杀死进程，终止程序运行。
+
+```c++
+  signal(SIGPIPE,SIG_IGN);  
+```
+
+然后我们继续看CTcpClient::Read函数，他的第二个参数是等待数据的超时时间，单位是s，缺省值是0，表示无限等待。为什么需要超时时间这个参数呢？举个例子，比如说打电话，电话拨通之后就应该说话，如果某一方一直不说话，或者信号不好对方听不见，对方肯定会在等待十几秒之后把电话挂断。网络通讯也是如此，如果再约定的时间之内，没有收到对方的报文，就会认为网络连接有问题，或者对方的程序有问题，这样的话就可以关闭这个socket，其实这也是一种心跳机制。
+
+```c++
+// 接收服务端发送过来的数据。
+// buffer：接收数据缓冲区的地址，数据的长度存放在m_buflen成员变量中。
+// itimeout：等待数据的超时时间，单位：秒，缺省值是0-无限等待。
+// 返回值：true-成功；false-失败，失败有两种情况：1）等待超时，成员变量m_btimeout的值被设置为true；2）socket连接已不可用。
+bool CTcpClient::Read(char *buffer,const int itimeout)
+{
+  if (m_connfd==-1) return false;
+
+  // 如果itimeout>0，表示需要等待itimeout秒，如果itimeout秒后还没有数据到达，返回false。
+  if (itimeout>0)
+  {
+    struct pollfd fds;
+    fds.fd=m_connfd;
+    fds.events=POLLIN;
+    int iret;
+    m_btimeout=false;
+    if ( (iret=poll(&fds,1,itimeout*1000)) <= 0 )
+    {
+      if (iret==0) m_btimeout = true;
+      return false;
+    }
+  }
+
+  m_buflen = 0;
+  return (TcpRead(m_connfd,buffer,&m_buflen));
+}
+
+```
+
+然后我们可以看到在这个函数中用到了io复用的代码 poll ，这里暂时不讨论io复用的问题，后续会对io复用进行深入探讨。这里只需要知道有这回事即可。poll所在的这段代码，只会判断timeout时间内是否有数据到达，不会去读取数据，数据读取采用的是下面的TcpRead函数。
+
+然后我们继续看服务端的这个tcp类。首先看socket初始化的这个方法
+
+```c++
+bool CTcpServer::InitServer(const unsigned int port,const int backlog)
+{
+  // 如果服务端的socket>0，关掉它，这种处理方法没有特别的原因，不要纠结。
+  if (m_listenfd > 0) { close(m_listenfd); m_listenfd=-1; }
+
+  if ( (m_listenfd = socket(AF_INET,SOCK_STREAM,0))<=0) return false;
+
+  // 忽略SIGPIPE信号，防止程序异常退出。
+  signal(SIGPIPE,SIG_IGN);   
+
+  // 打开SO_REUSEADDR选项，当服务端连接处于TIME_WAIT状态时可以再次启动服务器，
+  // 否则bind()可能会不成功，报：Address already in use。
+  //char opt = 1; unsigned int len = sizeof(opt);
+  int opt = 1; unsigned int len = sizeof(opt);
+  setsockopt(m_listenfd,SOL_SOCKET,SO_REUSEADDR,&opt,len);    
+
+  memset(&m_servaddr,0,sizeof(m_servaddr));
+  m_servaddr.sin_family = AF_INET;
+  m_servaddr.sin_addr.s_addr = htonl(INADDR_ANY);   // 任意ip地址。
+  m_servaddr.sin_port = htons(port);
+  if (bind(m_listenfd,(struct sockaddr *)&m_servaddr,sizeof(m_servaddr)) != 0 )
+  {
+    CloseListen(); return false;
+  }
+
+  if (listen(m_listenfd,backlog) != 0 )
+  {
+    CloseListen(); return false;
+  }
+
+  return true;
+}
+```
+
+一样的，在初始化的时候，忽略 `SIGPIPE`这个信号。然后这里还有一个细节就是打开 `SO_REUSEADDR`地址复用这个选项。对于服务端程序来说，一定要打开这个选项，不然的话，你服务端比如在1s的时候开启服务，然后立刻关闭服务，然后再3s的时候你想再次启动服务端的服务，这时候你就会发现你的服务端没办法成功绑定服务端ip，这是因为当前服务端处于TIME_WAIT状态，这个状态是由持续时间的，这期间内这个ip将不能被绑定给其他socket。除非你打开 `SO_REUSEADDR`这个选项，字面意思就是允许ip地址复用。打开SO_REUSEADDR选项，当服务端连接处于TIME_WAIT状态时可以再次启动服务器，否则bind()可能会不成功，报：Address already in use。
