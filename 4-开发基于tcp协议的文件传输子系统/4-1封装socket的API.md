@@ -1196,3 +1196,4 @@ bool CTcpServer::InitServer(const unsigned int port,const int backlog)
 ```
 
 一样的，在初始化的时候，忽略 `SIGPIPE`这个信号。然后这里还有一个细节就是打开 `SO_REUSEADDR`地址复用这个选项。对于服务端程序来说，一定要打开这个选项，不然的话，你服务端比如在1s的时候开启服务，然后立刻关闭服务，然后再3s的时候你想再次启动服务端的服务，这时候你就会发现你的服务端没办法成功绑定服务端ip，这是因为当前服务端处于TIME_WAIT状态，这个状态是由持续时间的，这期间内这个ip将不能被绑定给其他socket。除非你打开 `SO_REUSEADDR`这个选项，字面意思就是允许ip地址复用。打开SO_REUSEADDR选项，当服务端连接处于TIME_WAIT状态时可以再次启动服务器，否则bind()可能会不成功，报：Address already in use。
+
