@@ -530,3 +530,50 @@ sudo apt autoreclean(如果提示指令有误，就把reclean改成clean)
 
 
 
+自己用的是deepin系统，很不想用mariadb（虽然不了解这个东西，但好像还是更喜欢mysql），所以在网上一直找怎么去卸载mariadb，安装mysql
+试了很久，都没有成功，在网上看说是deepin里全都用的是mariadb
+
+testdb.c:3:10: fatal error: mysql.h: 没有那个文件或目录
+#include “mysql.h”
+^~~~~~~~~
+compilation terminated.
+
+所以自己只好去找mariadb，无法找到mysql.h的原因
+
+找不到mysql.h的解决方法
+首先切换到root用户下
+输入命令1
+sudo apt-get install libmariadb-dev
+输入命令2
+find / -name libmariadbclient.so
+会输出这样的结果：
+find: ‘/run/user/1000/gvfs’: 权限不够
+/usr/lib/x86_64-linux-gnu/libmariadbclient.so
+
+记住第二行的结果，一会儿会用到
+
+输入命令3
+find / -name mysql.h
+输出结果：
+find: ‘/run/user/1000/gvfs’: 权限不够
+/usr/include/mariadb/mysql.h
+/usr/include/mariadb/server/mysql.h
+
+记住结果
+
+用你得到的目录地址，去在最后一行命令中修改，就可以找到mysql.h头文件了
+gcc testdb.c -I/usr/include/mariadb -L/usr/lib/x86_64-linux-gnu -lmariadbclient -lpthread -lm -ldl -o main
+注意:修改-I 和-L后的目录为自己查找到的，就可以了
+
+
+
+root@inviubuntu:/usr/local/mysql/bin# ./mysqld --initialize --user=invi --datadir=/usr/local/mysql/data --basedir=/usr/local/mysql
+2022-04-12T02:42:14.999759Z 0 [Warning] TIMESTAMP with implicit DEFAULT value is deprecated. Please use --explicit_defaults_for_timestamp server option (see documentation for more details).
+2022-04-12T02:42:15.141882Z 0 [Warning] InnoDB: New log files created, LSN=45790
+2022-04-12T02:42:15.169655Z 0 [Warning] InnoDB: Creating foreign key constraint system tables.
+2022-04-12T02:42:15.223704Z 0 [Warning] No existing UUID has been found, so we assume that this is the first time that this server has been started. Generating a new UUID: 299cffc6-ba0a-11ec-bae7-000c290c73ba.
+2022-04-12T02:42:15.225392Z 0 [Warning] Gtid table is not ready to be used. Table 'mysql.gtid_executed' cannot be opened.
+2022-04-12T02:42:15.225658Z 1 [Note] A temporary password is generated for root@localhost: gdP9jt6Tb>mT
+
+<dN>wVz?k6fi
+

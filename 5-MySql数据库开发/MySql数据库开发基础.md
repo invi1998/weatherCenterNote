@@ -13,3 +13,5 @@ mysql  Ver 8.0.28-0ubuntu0.20.04.4 for Linux on x86_64 ((Ubuntu))
 
 # 封装MySql数据库开发API
 
+connection 和 sqlstatement类
+
