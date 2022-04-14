@@ -436,7 +436,7 @@ Cftp ftp;
 int main()
 {
     // 采用默认的被动模式登陆
-    if(ftp.login("192.168.31.166:21", "invi", "sh269jgl105") == false)
+    if(ftp.login("192.168.31.166:21", "invi", "passworld") == false)
     {
         printf("登陆失败！\n");
         return -1;
@@ -613,7 +613,7 @@ Cftp ftp;
 int main()
 {
     // 采用默认的被动模式登陆
-    if(ftp.login("192.168.31.166:21", "invi", "sh269jgl105") == false)
+    if(ftp.login("192.168.31.166:21", "invi", "passworld") == false)
     {
         printf("登陆失败！\n");
         return -1;
