@@ -137,7 +137,7 @@ fs.aio-max-nr = 1048576
 
 kernel.shmall = 2097152
 
-kernel.shmmax= 1073741824
+kernel.shmmax= 2147483648
 
 kernel.shmmni= 4096
 
