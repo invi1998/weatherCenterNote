@@ -90,7 +90,7 @@ void _help(char *argv[])
 {
     printf("Using:/project/tools/bin/deletetable_oracle logfilename xmlbuffer\n\n");
 
-    printf("Sample:/project/tools/bin/procctl 3600 /project/tools/bin/deletetable_oracle /log/idc/deletetable_oracle_ZHOBTMIND1.log \"<connstr>invi/sh269jgl105@snorcl11g_130</connstr><tname>T_ZHOBTMIND1</tname><keycol>keyid</keycol><where>where ddatetime<sysdate-0.03</where><starttime>01,02,03,04,05,13</starttime><timeout>120</timeout><pname>deletetable_oracle_ZHOBTMIND1</pname>\"\n\n");
+    printf("Sample:/project/tools/bin/procctl 3600 /project/tools/bin/deletetable_oracle /log/idc/deletetable_oracle_ZHOBTMIND1.log \"<connstr>invi/psaaword@snorcl11g_130</connstr><tname>T_ZHOBTMIND1</tname><keycol>keyid</keycol><where>where ddatetime<sysdate-0.03</where><starttime>01,02,03,04,05,13</starttime><timeout>120</timeout><pname>deletetable_oracle_ZHOBTMIND1</pname>\"\n\n");
 
     printf("本程序是数据中心的公共功能模块，用于定时清理表中的数据。\n");
 
@@ -332,7 +332,7 @@ void _help(char *argv[])
 {
   printf("Using:/project/tools/bin/migratetable_oracle logfilename xmlbuffer\n\n");
 
-  printf("Sample:/project/tools/bin/procctl 3600 /project/tools/bin/migratetable_oracle /log/idc/migratetable_oracle_ZHOBTMIND1.log \"<connstr>invi/sh269jgl105@snorcl11g_130</connstr><srctname>T_ZHOBTMIND1</srctname><dsttname>T_ZHOBTMIND_HIS</dsttname><keycol>keyid</keycol><where>where ddatetime<sysdate-0.03</where><starttime>01,02,03,04,05,13</starttime><maxcount>300</maxcount><timeout>120</timeout><pname>migratetable_oracle_ZHOBTMIND1</pname>\"\n\n");
+  printf("Sample:/project/tools/bin/procctl 3600 /project/tools/bin/migratetable_oracle /log/idc/migratetable_oracle_ZHOBTMIND1.log \"<connstr>invi/psaaword@snorcl11g_130</connstr><srctname>T_ZHOBTMIND1</srctname><dsttname>T_ZHOBTMIND_HIS</dsttname><keycol>keyid</keycol><where>where ddatetime<sysdate-0.03</where><starttime>01,02,03,04,05,13</starttime><maxcount>300</maxcount><timeout>120</timeout><pname>migratetable_oracle_ZHOBTMIND1</pname>\"\n\n");
 
   printf("本程序是数据中心的公共功能模块，用于迁移表中的数据。\n");
 

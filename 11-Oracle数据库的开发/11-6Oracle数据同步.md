@@ -115,9 +115,9 @@ void _help(char *argv[])
 
   // 因为测试的需要，xmltodb程序每次会删除T_ZHOBTCODE1@db132中的数据，全部的记录重新入库，keyid会变。
   // 所以以下脚本不能用keyid，要用obtid，用keyid会出问题，可以试试。
-  printf("       /project/tools/bin/procctl 10 /project/tools/bin/syncupdate_oracle /log/idc/syncupdate_oracle_ZHOBTCODE3.log \"<localconnstr>scott/tiger@snorcl11g_130</localconnstr><charset>Simplified Chinese_China.AL32UTF8</charset><lnktname>T_ZHOBTCODE1@db132</lnktname><localtname>T_ZHOBTCODE3</localtname><remotecols>obtid,cityname,provname,lat,lon,height,upttime,keyid</remotecols><localcols>obtid,cityname,provname,lat,lon,height,upttime,keyid</localcols><where>where obtid like '54%%%%'</where><synctype>2</synctype><remoteconnstr>invi/sh269jgl105@snorcl11g_130</remoteconnstr><remotetname>T_ZHOBTCODE1</remotetname><remotekeycol>obtid</remotekeycol><localkeycol>obtid</localkeycol><maxcount>10</maxcount><timeout>50</timeout><pname>syncupdate_oracle_ZHOBTCODE3</pname>\"\n\n");
+  printf("       /project/tools/bin/procctl 10 /project/tools/bin/syncupdate_oracle /log/idc/syncupdate_oracle_ZHOBTCODE3.log \"<localconnstr>scott/tiger@snorcl11g_130</localconnstr><charset>Simplified Chinese_China.AL32UTF8</charset><lnktname>T_ZHOBTCODE1@db132</lnktname><localtname>T_ZHOBTCODE3</localtname><remotecols>obtid,cityname,provname,lat,lon,height,upttime,keyid</remotecols><localcols>obtid,cityname,provname,lat,lon,height,upttime,keyid</localcols><where>where obtid like '54%%%%'</where><synctype>2</synctype><remoteconnstr>invi/psaaword@snorcl11g_130</remoteconnstr><remotetname>T_ZHOBTCODE1</remotetname><remotekeycol>obtid</remotekeycol><localkeycol>obtid</localkeycol><maxcount>10</maxcount><timeout>50</timeout><pname>syncupdate_oracle_ZHOBTCODE3</pname>\"\n\n");
 
-  printf("       /project/tools/bin/procctl 10 /project/tools/bin/syncupdate_oracle /log/idc/syncupdate_oracle_ZHOBTMIND2.log \"<localconnstr>scott/tiger@snorcl11g_130</localconnstr><charset>Simplified Chinese_China.AL32UTF8</charset><lnktname>T_ZHOBTMIND1@db132</lnktname><localtname>T_ZHOBTMIND2</localtname><remotecols>obtid,ddatetime,t,p,u,wd,wf,r,vis,upttime,keyid</remotecols><localcols>obtid,ddatetime,t,p,u,wd,wf,r,vis,upttime,keyid</localcols><where>where ddatetime>sysdate-0.04</where><synctype>2</synctype><remoteconnstr>invi/sh269jgl105@snorcl11g_130</remoteconnstr><remotetname>T_ZHOBTMIND1</remotetname><remotekeycol>keyid</remotekeycol><localkeycol>keyid</localkeycol><maxcount>300</maxcount><timeout>50</timeout><pname>syncupdate_oracle_ZHOBTMIND2</pname>\"\n\n");
+  printf("       /project/tools/bin/procctl 10 /project/tools/bin/syncupdate_oracle /log/idc/syncupdate_oracle_ZHOBTMIND2.log \"<localconnstr>scott/tiger@snorcl11g_130</localconnstr><charset>Simplified Chinese_China.AL32UTF8</charset><lnktname>T_ZHOBTMIND1@db132</lnktname><localtname>T_ZHOBTMIND2</localtname><remotecols>obtid,ddatetime,t,p,u,wd,wf,r,vis,upttime,keyid</remotecols><localcols>obtid,ddatetime,t,p,u,wd,wf,r,vis,upttime,keyid</localcols><where>where ddatetime>sysdate-0.04</where><synctype>2</synctype><remoteconnstr>invi/psaaword@snorcl11g_130</remoteconnstr><remotetname>T_ZHOBTMIND1</remotetname><remotekeycol>keyid</remotekeycol><localkeycol>keyid</localkeycol><maxcount>300</maxcount><timeout>50</timeout><pname>syncupdate_oracle_ZHOBTMIND2</pname>\"\n\n");
 
   printf("本程序是数据中心的公共功能模块，采用刷新的方法同步Oracle数据库之间的表。\n\n");
 
@@ -524,9 +524,9 @@ void _help(char *argv[])
 {
   printf("Using:/project/tools/bin/syncincrement_oracle logfilename xmlbuffer\n\n");
 
-  printf("Sample:/project/tools/bin/procctl 10 /project/tools/bin/syncincrement_oracle /log/idc/syncincrement_oracle_ZHOBTMIND2.log \"<localconnstr>scott/tiger@snorcl11g_130</localconnstr><remoteconnstr>invi/sh269jgl105@snorcl11g_130</remoteconnstr><charset>Simplified Chinese_China.AL32UTF8</charset><remotetname>T_ZHOBTMIND1</remotetname><lnktname>T_ZHOBTMIND1@db132</lnktname><localtname>T_ZHOBTMIND2</localtname><remotecols>obtid,ddatetime,t,p,u,wd,wf,r,vis,upttime,keyid</remotecols><localcols>obtid,ddatetime,t,p,u,wd,wf,r,vis,upttime,keyid</localcols><remotekeycol>keyid</remotekeycol><localkeycol>keyid</localkeycol><maxcount>300</maxcount><timetvl>2</timetvl><timeout>50</timeout><pname>syncincrement_oracle_ZHOBTMIND2</pname>\"\n\n");
+  printf("Sample:/project/tools/bin/procctl 10 /project/tools/bin/syncincrement_oracle /log/idc/syncincrement_oracle_ZHOBTMIND2.log \"<localconnstr>scott/tiger@snorcl11g_130</localconnstr><remoteconnstr>invi/psaaword@snorcl11g_130</remoteconnstr><charset>Simplified Chinese_China.AL32UTF8</charset><remotetname>T_ZHOBTMIND1</remotetname><lnktname>T_ZHOBTMIND1@db132</lnktname><localtname>T_ZHOBTMIND2</localtname><remotecols>obtid,ddatetime,t,p,u,wd,wf,r,vis,upttime,keyid</remotecols><localcols>obtid,ddatetime,t,p,u,wd,wf,r,vis,upttime,keyid</localcols><remotekeycol>keyid</remotekeycol><localkeycol>keyid</localkeycol><maxcount>300</maxcount><timetvl>2</timetvl><timeout>50</timeout><pname>syncincrement_oracle_ZHOBTMIND2</pname>\"\n\n");
 
-  printf("       /project/tools/bin/procctl 10 /project/tools/bin/syncincrement_oracle /log/idc/syncincrement_oracle_ZHOBTMIND3.log \"<localconnstr>scott/tiger@snorcl11g_130</localconnstr><remoteconnstr>invi/sh269jgl105@snorcl11g_130</remoteconnstr><charset>Simplified Chinese_China.AL32UTF8</charset><remotetname>T_ZHOBTMIND1</remotetname><lnktname>T_ZHOBTMIND1@db132</lnktname><localtname>T_ZHOBTMIND3</localtname><remotecols>obtid,ddatetime,t,p,u,wd,wf,r,vis,upttime,keyid</remotecols><localcols>obtid,ddatetime,t,p,u,wd,wf,r,vis,upttime,keyid</localcols><where>and obtid like '54%%%%'</where><remotekeycol>keyid</remotekeycol><localkeycol>keyid</localkeycol><maxcount>300</maxcount><timetvl>2</timetvl><timeout>50</timeout><pname>syncincrement_oracle_ZHOBTMIND3</pname>\"\n\n");
+  printf("       /project/tools/bin/procctl 10 /project/tools/bin/syncincrement_oracle /log/idc/syncincrement_oracle_ZHOBTMIND3.log \"<localconnstr>scott/tiger@snorcl11g_130</localconnstr><remoteconnstr>invi/psaaword@snorcl11g_130</remoteconnstr><charset>Simplified Chinese_China.AL32UTF8</charset><remotetname>T_ZHOBTMIND1</remotetname><lnktname>T_ZHOBTMIND1@db132</lnktname><localtname>T_ZHOBTMIND3</localtname><remotecols>obtid,ddatetime,t,p,u,wd,wf,r,vis,upttime,keyid</remotecols><localcols>obtid,ddatetime,t,p,u,wd,wf,r,vis,upttime,keyid</localcols><where>and obtid like '54%%%%'</where><remotekeycol>keyid</remotekeycol><localkeycol>keyid</localkeycol><maxcount>300</maxcount><timetvl>2</timetvl><timeout>50</timeout><pname>syncincrement_oracle_ZHOBTMIND3</pname>\"\n\n");
 
   printf("本程序是数据中心的公共功能模块，采用增量的方法同步Oracle数据库之间的表。\n\n");
 
@@ -895,9 +895,9 @@ void _help(char *argv[])
 {
   printf("Using:/project/tools/bin/syncincrementex_oracle logfilename xmlbuffer\n\n");
 
-  printf("Sample:/project/tools/bin/procctl 10 /project/tools/bin/syncincrementex_oracle /log/idc/syncincrementex_oracle_ZHOBTMIND2.log \"<localconnstr>scott/tiger@snorcl11g_130</localconnstr><remoteconnstr>invi/sh269jgl105@snorcl11g_130</remoteconnstr><charset>Simplified Chinese_China.AL32UTF8</charset><remotetname>T_ZHOBTMIND1</remotetname><localtname>T_ZHOBTMIND2</localtname><remotekeycol>keyid</remotekeycol><localkeycol>keyid</localkeycol><timetvl>2</timetvl><timeout>50</timeout><pname>syncincrementex_oracle_ZHOBTMIND2</pname>\"\n\n");
+  printf("Sample:/project/tools/bin/procctl 10 /project/tools/bin/syncincrementex_oracle /log/idc/syncincrementex_oracle_ZHOBTMIND2.log \"<localconnstr>scott/tiger@snorcl11g_130</localconnstr><remoteconnstr>invi/psaaword@snorcl11g_130</remoteconnstr><charset>Simplified Chinese_China.AL32UTF8</charset><remotetname>T_ZHOBTMIND1</remotetname><localtname>T_ZHOBTMIND2</localtname><remotekeycol>keyid</remotekeycol><localkeycol>keyid</localkeycol><timetvl>2</timetvl><timeout>50</timeout><pname>syncincrementex_oracle_ZHOBTMIND2</pname>\"\n\n");
 
-  printf("       /project/tools/bin/procctl 10 /project/tools/bin/syncincrementex_oracle /log/idc/syncincrementex_oracle_ZHOBTMIND3.log \"<localconnstr>scott/tiger@snorcl11g_130</localconnstr><remoteconnstr>invi/sh269jgl105@snorcl11g_130</remoteconnstr><charset>Simplified Chinese_China.AL32UTF8</charset><remotetname>T_ZHOBTMIND1</remotetname><localtname>T_ZHOBTMIND3</localtname><where>and obtid like '54%%%%'</where><remotekeycol>keyid</remotekeycol><localkeycol>keyid</localkeycol><timetvl>2</timetvl><timeout>50</timeout><pname>syncincrementex_oracle_ZHOBTMIND3</pname>\"\n\n");
+  printf("       /project/tools/bin/procctl 10 /project/tools/bin/syncincrementex_oracle /log/idc/syncincrementex_oracle_ZHOBTMIND3.log \"<localconnstr>scott/tiger@snorcl11g_130</localconnstr><remoteconnstr>invi/psaaword@snorcl11g_130</remoteconnstr><charset>Simplified Chinese_China.AL32UTF8</charset><remotetname>T_ZHOBTMIND1</remotetname><localtname>T_ZHOBTMIND3</localtname><where>and obtid like '54%%%%'</where><remotekeycol>keyid</remotekeycol><localkeycol>keyid</localkeycol><timetvl>2</timetvl><timeout>50</timeout><pname>syncincrementex_oracle_ZHOBTMIND3</pname>\"\n\n");
 
   printf("本程序是数据中心的公共功能模块，采用增量的方法同步Oracle数据库之间的表。\n\n");
 
@@ -1109,3 +1109,18 @@ bool findmaxkey()
 
 ```
 
+**采用dblink的批量同步效率远远高于不采用dblink的同步效率，而且高于federated引擎的批量同步效率。**
+
+然后将Oracle的数据同步添加入系统运行脚本
+
+```shell
+# 把invi.T_ZHOBTCODE1@db132表中的数据同步到scott.T_ZHOBTCODE2。
+/project/tools/bin/syncupdate_oracle /log/idc/syncupdate_oracle_ZHOBTCODE2.log "<localconnstr>scott/tiger@snorcl11g_130</localconnstr><charset>Simplified Chinese_China.AL32UTF8</charset><lnktname>T_ZHOBTCODE1@db132</lnktname><localtname>T_ZHOBTCODE2</localtname><remotecols>obtid,cityname,provname,lat,lon,height,upttime,keyid</remotecols><localcols>obtid,cityname,provname,lat,lon,height,upttime,keyid</localcols><synctype>1</synctype><timeout>50</timeout><pname>syncupdate_oracle_ZHOBTCODE2</pname>"
+
+# 把invi.T_ZHOBTMIND1@db132表中的数据同步到scott.T_ZHOBTMIND2。
+/project/tools/bin/procctl 10 /project/tools/bin/syncincrement_oracle /log/idc/syncincrement_oracle_ZHOBTMIND2.log "<localconnstr>scott/tiger@snorcl11g_130</localconnstr><remoteconnstr>invi/psaaword@snorcl11g_130</remoteconnstr><charset>Simplified Chinese_China.AL32UTF8</charset><remotetname>T_ZHOBTMIND1</remotetname><lnktname>T_ZHOBTMIND1@db132</lnktname><localtname>T_ZHOBTMIND2</localtname><remotecols>obtid,ddatetime,t,p,u,wd,wf,r,vis,upttime,keyid</remotecols><localcols>obtid,ddatetime,t,p,u,wd,wf,r,vis,upttime,keyid</localcols><remotekeycol>keyid</remotekeycol><localkeycol>keyid</localkeycol><maxcount>300</maxcount><timetvl>2</timetvl><timeout>50</timeout><pname>syncincrement_oracle_ZHOBTMIND2</pname>"
+
+# 清理scott.T_ZHOBTMIND2表中0.03天之前的数据。
+/project/tools/bin/procctl 3600 /project/tools/bin/deletetable_oracle /log/idc/deletetable_oracle_ZHOBTMIND2.log "<connstr>scott/tiger@snorcl11g_130</connstr><tname>T_ZHOBTMIND2</tname><keycol>rowid</keycol><where>where ddatetime<sysdate-0.05</where></starttime><timeout>120</timeout><pname>deletetable_oracle_ZHOBTMIND2</pname>"
+
+```
