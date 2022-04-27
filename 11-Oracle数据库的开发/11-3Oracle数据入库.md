@@ -17,5 +17,53 @@
 
 在Oracle数据库中创建表（用户权限，序列生成器，powerDesigner）
 
+```sql
+drop table T_ZHOBTCODE cascade constraints;
+
+/*==============================================================*/
+/* Table: T_ZHOBTCODE                                           */
+/*==============================================================*/
+drop   sequence SEQ_ZHOBTCODE;
+create sequence SEQ_ZHOBTCODE increment by 1 minvalue 1 nocycle;
+create table T_ZHOBTCODE 
+(
+   obtid              varchar2(10)         not null,
+   cityname           varchar2(30)         not null,
+   provname           varchar2(30)         not null,
+   lat                number(8)            not null,
+   lon                number(8)            not null,
+   height             number(8),
+   upttime            date                 default sysdate not null,
+   keyid              number(15)           not null,
+   constraint PK_ZHOBTCODE primary key (obtid),
+   constraint ZHOBTCODE_KEYID unique (keyid)
+);
+
+comment on column T_ZHOBTCODE.obtid is
+'站点代码';
+
+comment on column T_ZHOBTCODE.cityname is
+'城市名称';
+
+comment on column T_ZHOBTCODE.provname is
+'省名称';
+
+comment on column T_ZHOBTCODE.lat is
+'纬度，单位：0.01度。';
+
+comment on column T_ZHOBTCODE.lon is
+'经度，单位：0.01度。';
+
+comment on column T_ZHOBTCODE.height is
+'海拔高度，单位：0.1米。';
+
+comment on column T_ZHOBTCODE.upttime is
+'更新时间，数据被插入或更新的时间。';
+
+comment on column T_ZHOBTCODE.keyid is
+'记录编号，从与本表同名的序列生成器中获取。';
+
+```
+
 新增xmltodb_oracle.cpp程序，把xml文件入库到Oracle的表中
 
