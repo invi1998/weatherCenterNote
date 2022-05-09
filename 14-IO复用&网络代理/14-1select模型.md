@@ -1,4 +1,4 @@
-# 简介
+#  简介
 
 ## IO复用
 
@@ -63,19 +63,19 @@ Select工作流程
 
 - 1：用FD_ZERO宏来初始化我们感兴趣的`fd_set`
 
-​  也就是select函数的第二三四个参数。
+  也就是select函数的第二三四个参数。
 
 - 2：用FD_SET宏来将套接字句柄分配给相应的`fd_set`。
 
-​  如果想要检查一个套接字是否有数据需要接收，可以用FD_SET宏把套接接字句柄加入可读性检查队列中
+  如果想要检查一个套接字是否有数据需要接收，可以用FD_SET宏把套接接字句柄加入可读性检查队列中
 
 - 3：调用select函数。
 
-​  如果该套接字没有数据需要接收，select函数会把该套接字从可读性检查队列中删除掉，
+  如果该套接字没有数据需要接收，select函数会把该套接字从可读性检查队列中删除掉，
 
 - 4：用FD_ISSET对套接字句柄进行检查。
 
-​  如果我们所关注的那个套接字句柄仍然在开始分配的那个`fd_set`里，那么说明马上可以进行相应的IO操 作。比如一个分配给select第一个参数的套接字句柄在select返回后仍然在select第一个参数的`fd_set`里，那么说明当前数据已经来了， 马上可以读取成功而不会被阻塞。
+  如果我们所关注的那个套接字句柄仍然在开始分配的那个`fd_set`里，那么说明马上可以进行相应的IO操 作。比如一个分配给select第一个参数的套接字句柄在select返回后仍然在select第一个参数的`fd_set`里，那么说明当前数据已经来了， 马上可以读取成功而不会被阻塞。
 
 | No   | 参数                             | 含义                                      |
 | ---- | -------------------------------- | ----------------------------------------- |
@@ -140,8 +140,12 @@ int main(int argc, char *argv[])
         // 可读事件  可写事件
         // select() 等待事件的发生(监视哪些socket发生了事件)。
 
+        struct timeval timeout;
+        timeout.tv_sec=10;          // 10s
+        timeout.tv_usec=0;          // 0微秒
+
         fd_set tmpfds = readfds;
-        int infds = select(maxfd+1, &tmpfds, NULL, NULL, NULL);     // 这里把socket集合的副本传给select
+        int infds = select(maxfd+1, &tmpfds, NULL, NULL, &timeout);     // 这里把socket集合的副本传给select
 
         // 返回失败
         if(infds < 0)
@@ -343,3 +347,10 @@ int main(int argc, char *argv[])
 编译上面两个程序，然后运行服务端，启动多几个客户端。测试通讯过程
 
 ![](.\img\QQ截图20220509155258.png)
+
+# select模型的缺点
+
+- 支持的连接数太小（1024），调整的意义不大
+- select是内核函数，每次调用select，要把fdset从用户态拷贝到内核，调用select之后，把fdset从内核态拷贝到用户态中
+- select返回后，需要遍历bitmap，效率比较低
+
